@@ -4756,21 +4756,27 @@ static int gfx_v8_0_cp_resume(struct amdgpu_device *adev)
 	if (!(adev->flags & AMD_IS_APU))
 		gfx_v8_0_enable_gui_idle_interrupt(adev, false);
 
+	dev_info(adev->dev, "gfx_v8_0_cp_resume: entering kiq_resume\n");
 	r = gfx_v8_0_kiq_resume(adev);
 	if (r)
 		return r;
 
+	dev_info(adev->dev, "gfx_v8_0_cp_resume: entering cp_gfx_resume\n");
 	r = gfx_v8_0_cp_gfx_resume(adev);
 	if (r)
 		return r;
 
+	dev_info(adev->dev, "gfx_v8_0_cp_resume: entering kcq_resume\n");
 	r = gfx_v8_0_kcq_resume(adev);
 	if (r)
 		return r;
 
+	dev_info(adev->dev, "gfx_v8_0_cp_resume: entering cp_test_all_rings\n");
 	r = gfx_v8_0_cp_test_all_rings(adev);
 	if (r)
 		return r;
+
+	dev_info(adev->dev, "gfx_v8_0_cp_resume: complete\n");
 
 	gfx_v8_0_enable_gui_idle_interrupt(adev, true);
 
@@ -4791,10 +4797,12 @@ static int gfx_v8_0_hw_init(void *handle)
 	gfx_v8_0_init_golden_registers(adev);
 	gfx_v8_0_constants_init(adev);
 
+	dev_info(adev->dev, "gfx_v8_0_hw_init: entering rlc resume\n");
 	r = adev->gfx.rlc.funcs->resume(adev);
 	if (r)
 		return r;
 
+	dev_info(adev->dev, "gfx_v8_0_hw_init: entering cp_resume\n");
 	r = gfx_v8_0_cp_resume(adev);
 
 	return r;

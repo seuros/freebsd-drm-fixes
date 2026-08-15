@@ -422,6 +422,19 @@ int smu7_request_smu_load_fw(struct pp_hwmgr *hwmgr)
 	smum_send_msg_to_smc_with_parameter(hwmgr, PPSMC_MSG_LoadUcodes, fw_to_load, NULL);
 
 	r = smu7_check_fw_load_finish(hwmgr, fw_to_load);
+	{
+		struct amdgpu_device *adev = hwmgr->adev;
+		uint32_t status = 0;
+
+		smu7_read_smc_sram_dword(hwmgr,
+			smu_data->soft_regs_start + smum_get_offsetof(hwmgr,
+				SMU_SoftRegisters, UcodeLoadStatus),
+			&status, 0x40000);
+		dev_info(adev->dev,
+			"smu7_request_smu_load_fw: fw_to_load=0x%08x UcodeLoadStatus=0x%08x check_r=%d (CP_PFP_bit=%d)\n",
+			fw_to_load, status, r,
+			!!(status & UCODE_ID_CP_PFP_MASK));
+	}
 	if (!r)
 		return 0;
 

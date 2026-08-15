@@ -4731,21 +4731,25 @@ static int gfx_v8_0_cp_test_all_rings(struct amdgpu_device *adev)
 	struct amdgpu_ring *ring;
 
 	/* collect all the ring_tests here, gfx, kiq, compute */
+	dev_info(adev->dev, "cp_test_all_rings: testing gfx_ring[0]\n");
 	ring = &adev->gfx.gfx_ring[0];
 	r = amdgpu_ring_test_helper(ring);
 	if (r)
 		return r;
 
+	dev_info(adev->dev, "cp_test_all_rings: testing kiq[0]\n");
 	ring = &adev->gfx.kiq[0].ring;
 	r = amdgpu_ring_test_helper(ring);
 	if (r)
 		return r;
 
 	for (i = 0; i < adev->gfx.num_compute_rings; i++) {
+		dev_info(adev->dev, "cp_test_all_rings: testing compute_ring[%d]\n", i);
 		ring = &adev->gfx.compute_ring[i];
 		amdgpu_ring_test_helper(ring);
 	}
 
+	dev_info(adev->dev, "cp_test_all_rings: all rings tested\n");
 	return 0;
 }
 

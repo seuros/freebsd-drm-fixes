@@ -5420,10 +5420,9 @@ static int cik_pcie_gart_enable(struct radeon_device *rdev)
 {
 	int r, i;
 
-	if (rdev->gart.robj == NULL) {
-		dev_err(rdev->dev, "No VRAM object for PCIE GART.\n");
-		return -EINVAL;
-	}
+	r = radeon_gart_table_vram_ensure(rdev);
+	if (r)
+		return r;
 	r = radeon_gart_table_vram_pin(rdev);
 	if (r)
 		return r;

@@ -140,6 +140,32 @@ int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
 }
 
 /**
+ * radeon_gart_table_vram_ensure - recreate the gart vram object if resume dropped it
+ *
+ * @rdev: radeon_device pointer
+ *
+ * rdev->gart.robj is torn down and left NULL across S3 on r4xx+ asics.
+ * radeon_gart_table_vram_pin() restores GART entries from a system-RAM
+ * shadow independent of the BO, so *_pcie_gart_enable() only needs the
+ * object to exist again before pinning it.
+ * Returns 0 for success, error for failure.
+ */
+int radeon_gart_table_vram_ensure(struct radeon_device *rdev)
+{
+	int r;
+
+	if (rdev->gart.robj == NULL) {
+		r = radeon_gart_table_vram_alloc(rdev);
+		if (r) {
+			dev_err(rdev->dev,
+				"Failed to recreate VRAM object for PCIE GART: %d.\n", r);
+			return r;
+		}
+	}
+	return 0;
+}
+
+/**
  * radeon_gart_table_vram_pin - pin gart page table in vram
  *
  * @rdev: radeon_device pointer

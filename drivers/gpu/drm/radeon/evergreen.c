@@ -2402,13 +2402,9 @@ static int evergreen_pcie_gart_enable(struct radeon_device *rdev)
 	u32 tmp;
 	int r;
 
-	if (rdev->gart.robj == NULL) {
-		r = radeon_gart_table_vram_alloc(rdev);
-		if (r) {
-			dev_err(rdev->dev, "Failed to recreate VRAM object for PCIE GART: %d.\n", r);
-			return r;
-		}
-	}
+	r = radeon_gart_table_vram_ensure(rdev);
+	if (r)
+		return r;
 	r = radeon_gart_table_vram_pin(rdev);
 	if (r)
 		return r;

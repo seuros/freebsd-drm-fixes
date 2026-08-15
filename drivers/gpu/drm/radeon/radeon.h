@@ -617,6 +617,7 @@ struct radeon_gart {
 int radeon_gart_table_ram_alloc(struct radeon_device *rdev);
 void radeon_gart_table_ram_free(struct radeon_device *rdev);
 int radeon_gart_table_vram_alloc(struct radeon_device *rdev);
+int radeon_gart_table_vram_ensure(struct radeon_device *rdev);
 void radeon_gart_table_vram_free(struct radeon_device *rdev);
 int radeon_gart_table_vram_pin(struct radeon_device *rdev);
 void radeon_gart_table_vram_unpin(struct radeon_device *rdev);

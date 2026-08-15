@@ -864,6 +864,7 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 
 	if (i >= adev->usec_timeout) {
 		unsigned bi;
+		unsigned rptr = RREG32(mmCP_RB0_RPTR);
 
 		r = -ETIMEDOUT;
 		dev_info(adev->dev,
@@ -874,7 +875,7 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			"RLC_GPM_STAT=0x%08x CP_INT_STATUS=0x%08x\n",
 			ring->name, tmp,
 			RREG32(mmCP_ME_CNTL), RREG32(mmCP_STAT), RREG32(mmGRBM_STATUS),
-			RREG32(mmCP_RB0_CNTL), RREG32(mmCP_RB0_RPTR), RREG32(mmCP_RB0_WPTR),
+			RREG32(mmCP_RB0_CNTL), rptr, RREG32(mmCP_RB0_WPTR),
 			RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr,
 			RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
 
@@ -883,6 +884,13 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			dev_info(adev->dev,
 				"ring_test_ring[%s]: pkt_start=%u ring->ring[%u]=0x%08x\n",
 				ring->name, pkt_start, idx, ring->ring[idx]);
+		}
+
+		for (bi = 0; bi < 12; bi++) {
+			unsigned idx = (rptr + bi) & ring->buf_mask;
+			dev_info(adev->dev,
+				"ring_test_ring[%s]: rptr=%u ring->ring[%u]=0x%08x\n",
+				ring->name, rptr, idx, ring->ring[idx]);
 		}
 	}
 

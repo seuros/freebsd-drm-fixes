@@ -840,12 +840,15 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 	struct amdgpu_device *adev = ring->adev;
 	uint32_t tmp = 0;
 	unsigned i;
+	unsigned pkt_start;
 	int r;
 
 	WREG32(mmSCRATCH_REG0, 0xCAFEDEAD);
 	r = amdgpu_ring_alloc(ring, 3);
 	if (r)
 		return r;
+
+	pkt_start = (unsigned)ring->wptr;
 
 	amdgpu_ring_write(ring, PACKET3(PACKET3_SET_UCONFIG_REG, 1));
 	amdgpu_ring_write(ring, mmSCRATCH_REG0 - PACKET3_SET_UCONFIG_REG_START);
@@ -876,10 +879,10 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
 
 		for (bi = 0; bi < 3; bi++) {
-			unsigned idx = (ring->wptr - 3 + bi) & ring->buf_mask;
+			unsigned idx = (pkt_start + bi) & ring->buf_mask;
 			dev_info(adev->dev,
-				"ring_test_ring[%s]: ring->ring[%u]=0x%08x\n",
-				ring->name, idx, ring->ring[idx]);
+				"ring_test_ring[%s]: pkt_start=%u ring->ring[%u]=0x%08x\n",
+				ring->name, pkt_start, idx, ring->ring[idx]);
 		}
 	}
 

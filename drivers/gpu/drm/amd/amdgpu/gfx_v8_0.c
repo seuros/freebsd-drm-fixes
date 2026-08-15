@@ -4149,6 +4149,7 @@ static int gfx_v8_0_cp_gfx_start(struct amdgpu_device *adev)
 	const struct cs_section_def *sect = NULL;
 	const struct cs_extent_def *ext = NULL;
 	int r, i;
+	unsigned dw = 0;
 
 	/* init the CP */
 	WREG32(mmCP_MAX_CONTEXT, adev->gfx.config.max_hw_contexts - 1);
@@ -4166,14 +4167,21 @@ static int gfx_v8_0_cp_gfx_start(struct amdgpu_device *adev)
 	/* clear state buffer */
 	amdgpu_ring_write(ring, PACKET3(PACKET3_PREAMBLE_CNTL, 0));
 	amdgpu_ring_write(ring, PACKET3_PREAMBLE_BEGIN_CLEAR_STATE);
+	dw += 2;
 
 	amdgpu_ring_write(ring, PACKET3(PACKET3_CONTEXT_CONTROL, 1));
 	amdgpu_ring_write(ring, 0x80000000);
 	amdgpu_ring_write(ring, 0x80000000);
+	dw += 3;
 
 	for (sect = vi_cs_data; sect->section != NULL; ++sect) {
 		for (ext = sect->section; ext->extent != NULL; ++ext) {
 			if (sect->id == SECT_CONTEXT) {
+				dev_info(adev->dev,
+					"cp_gfx_start: dw=0x%04x(%u) reg=0x%04x off=0x%04x count=%u\n",
+					dw, dw, ext->reg_index,
+					ext->reg_index - PACKET3_SET_CONTEXT_REG_START,
+					ext->reg_count);
 				amdgpu_ring_write(ring,
 				       PACKET3(PACKET3_SET_CONTEXT_REG,
 					       ext->reg_count));
@@ -4181,26 +4189,35 @@ static int gfx_v8_0_cp_gfx_start(struct amdgpu_device *adev)
 				       ext->reg_index - PACKET3_SET_CONTEXT_REG_START);
 				for (i = 0; i < ext->reg_count; i++)
 					amdgpu_ring_write(ring, ext->extent[i]);
+				dw += 2 + ext->reg_count;
 			}
 		}
 	}
 
+	dev_info(adev->dev, "cp_gfx_start: raster_config dw=0x%04x(%u)\n", dw, dw);
 	amdgpu_ring_write(ring, PACKET3(PACKET3_SET_CONTEXT_REG, 2));
 	amdgpu_ring_write(ring, mmPA_SC_RASTER_CONFIG - PACKET3_SET_CONTEXT_REG_START);
 	amdgpu_ring_write(ring, adev->gfx.config.rb_config[0][0].raster_config);
 	amdgpu_ring_write(ring, adev->gfx.config.rb_config[0][0].raster_config_1);
+	dw += 4;
 
 	amdgpu_ring_write(ring, PACKET3(PACKET3_PREAMBLE_CNTL, 0));
 	amdgpu_ring_write(ring, PACKET3_PREAMBLE_END_CLEAR_STATE);
+	dw += 2;
 
 	amdgpu_ring_write(ring, PACKET3(PACKET3_CLEAR_STATE, 0));
 	amdgpu_ring_write(ring, 0);
+	dw += 2;
+
+	dev_info(adev->dev, "cp_gfx_start: csb end dw=0x%04x(%u) alloc=%u\n",
+		dw, dw, gfx_v8_0_get_csb_size(adev) + 4);
 
 	/* init the CE partitions */
 	amdgpu_ring_write(ring, PACKET3(PACKET3_SET_BASE, 2));
 	amdgpu_ring_write(ring, PACKET3_BASE_INDEX(CE_PARTITION_BASE));
 	amdgpu_ring_write(ring, 0x8000);
 	amdgpu_ring_write(ring, 0x8000);
+	dw += 4;
 
 	amdgpu_ring_commit(ring);
 

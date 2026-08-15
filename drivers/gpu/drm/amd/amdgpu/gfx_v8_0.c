@@ -860,6 +860,8 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 	}
 
 	if (i >= adev->usec_timeout) {
+		unsigned bi;
+
 		r = -ETIMEDOUT;
 		dev_info(adev->dev,
 			"ring_test_ring[%s]: timeout scratch=0x%08x "
@@ -872,6 +874,13 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			RREG32(mmCP_RB0_CNTL), RREG32(mmCP_RB0_RPTR), RREG32(mmCP_RB0_WPTR),
 			RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr,
 			RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
+
+		for (bi = 0; bi < 3; bi++) {
+			unsigned idx = (ring->wptr - 3 + bi) & ring->buf_mask;
+			dev_info(adev->dev,
+				"ring_test_ring[%s]: ring->ring[%u]=0x%08x\n",
+				ring->name, idx, ring->ring[idx]);
+		}
 	}
 
 	return r;

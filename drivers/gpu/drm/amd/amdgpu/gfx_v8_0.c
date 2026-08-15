@@ -865,11 +865,13 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			"ring_test_ring[%s]: timeout scratch=0x%08x "
 			"CP_ME_CNTL=0x%08x CP_STAT=0x%08x GRBM_STATUS=0x%08x "
 			"RB0_CNTL=0x%08x RB0_RPTR=0x%08x RB0_WPTR=0x%08x "
-			"DOORBELL_CONTROL=0x%08x sw_wptr=0x%08x\n",
+			"DOORBELL_CONTROL=0x%08x sw_wptr=0x%08x "
+			"RLC_GPM_STAT=0x%08x CP_INT_STATUS=0x%08x\n",
 			ring->name, tmp,
 			RREG32(mmCP_ME_CNTL), RREG32(mmCP_STAT), RREG32(mmGRBM_STATUS),
 			RREG32(mmCP_RB0_CNTL), RREG32(mmCP_RB0_RPTR), RREG32(mmCP_RB0_WPTR),
-			RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr);
+			RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr,
+			RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
 	}
 
 	return r;

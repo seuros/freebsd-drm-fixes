@@ -864,10 +864,12 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 
 	if (i >= adev->usec_timeout) {
 		unsigned bi;
-		unsigned rptr = RREG32(mmCP_RB0_RPTR);
+		unsigned rptr;
 		u32 fault_addr = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_ADDR);
 		u32 fault_status = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_STATUS);
 		u32 fault_client = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_MCCLIENT);
+		bool is_hqd = (ring->funcs->type == AMDGPU_RING_TYPE_COMPUTE ||
+			       ring->funcs->type == AMDGPU_RING_TYPE_KIQ);
 
 		r = -ETIMEDOUT;
 		dev_info(adev->dev,
@@ -877,17 +879,45 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 			ring->rptr_cpu_addr ? *ring->rptr_cpu_addr : 0xffffffff,
 			ring->wptr_cpu_addr ? *ring->wptr_cpu_addr : 0xffffffff);
 
-		dev_info(adev->dev,
-			"ring_test_ring[%s]: timeout scratch=0x%08x "
-			"CP_ME_CNTL=0x%08x CP_STAT=0x%08x GRBM_STATUS=0x%08x "
-			"RB0_CNTL=0x%08x RB0_RPTR=0x%08x RB0_WPTR=0x%08x "
-			"DOORBELL_CONTROL=0x%08x sw_wptr=0x%08x "
-			"RLC_GPM_STAT=0x%08x CP_INT_STATUS=0x%08x\n",
-			ring->name, tmp,
-			RREG32(mmCP_ME_CNTL), RREG32(mmCP_STAT), RREG32(mmGRBM_STATUS),
-			RREG32(mmCP_RB0_CNTL), rptr, RREG32(mmCP_RB0_WPTR),
-			RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr,
-			RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
+		if (is_hqd) {
+			u32 hqd_active, hqd_rptr, hqd_wptr, hqd_doorbell, pq_status;
+
+			mutex_lock(&adev->srbm_mutex);
+			vi_srbm_select(adev, ring->me, ring->pipe, ring->queue, 0);
+			hqd_active = RREG32(mmCP_HQD_ACTIVE);
+			hqd_rptr = RREG32(mmCP_HQD_PQ_RPTR);
+			hqd_wptr = RREG32(mmCP_HQD_PQ_WPTR);
+			hqd_doorbell = RREG32(mmCP_HQD_PQ_DOORBELL_CONTROL);
+			vi_srbm_select(adev, 0, 0, 0, 0);
+			mutex_unlock(&adev->srbm_mutex);
+			pq_status = RREG32(mmCP_PQ_STATUS);
+
+			rptr = hqd_rptr;
+			dev_info(adev->dev,
+				"ring_test_ring[%s]: timeout scratch=0x%08x me=%u pipe=%u queue=%u "
+				"CP_ME_CNTL=0x%08x CP_STAT=0x%08x GRBM_STATUS=0x%08x "
+				"HQD_ACTIVE=0x%08x HQD_PQ_RPTR=0x%08x HQD_PQ_WPTR=0x%08x "
+				"HQD_PQ_DOORBELL_CONTROL=0x%08x CP_PQ_STATUS=0x%08x sw_wptr=0x%08x "
+				"RLC_GPM_STAT=0x%08x CP_INT_STATUS=0x%08x\n",
+				ring->name, tmp, ring->me, ring->pipe, ring->queue,
+				RREG32(mmCP_ME_CNTL), RREG32(mmCP_STAT), RREG32(mmGRBM_STATUS),
+				hqd_active, hqd_rptr, hqd_wptr,
+				hqd_doorbell, pq_status, (u32)ring->wptr,
+				RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
+		} else {
+			rptr = RREG32(mmCP_RB0_RPTR);
+			dev_info(adev->dev,
+				"ring_test_ring[%s]: timeout scratch=0x%08x "
+				"CP_ME_CNTL=0x%08x CP_STAT=0x%08x GRBM_STATUS=0x%08x "
+				"RB0_CNTL=0x%08x RB0_RPTR=0x%08x RB0_WPTR=0x%08x "
+				"DOORBELL_CONTROL=0x%08x sw_wptr=0x%08x "
+				"RLC_GPM_STAT=0x%08x CP_INT_STATUS=0x%08x\n",
+				ring->name, tmp,
+				RREG32(mmCP_ME_CNTL), RREG32(mmCP_STAT), RREG32(mmGRBM_STATUS),
+				RREG32(mmCP_RB0_CNTL), rptr, RREG32(mmCP_RB0_WPTR),
+				RREG32(mmCP_RB_DOORBELL_CONTROL), (u32)ring->wptr,
+				RREG32(mmRLC_GPM_STAT), RREG32(mmCP_INT_STATUS));
+		}
 
 		for (bi = 0; bi < 3; bi++) {
 			unsigned idx = (pkt_start + bi) & ring->buf_mask;

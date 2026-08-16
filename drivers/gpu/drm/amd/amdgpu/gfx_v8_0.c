@@ -865,8 +865,18 @@ static int gfx_v8_0_ring_test_ring(struct amdgpu_ring *ring)
 	if (i >= adev->usec_timeout) {
 		unsigned bi;
 		unsigned rptr = RREG32(mmCP_RB0_RPTR);
+		u32 fault_addr = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_ADDR);
+		u32 fault_status = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_STATUS);
+		u32 fault_client = RREG32(mmVM_CONTEXT1_PROTECTION_FAULT_MCCLIENT);
 
 		r = -ETIMEDOUT;
+		dev_info(adev->dev,
+			"ring_test_ring[%s]: VM_FAULT_ADDR=0x%08x VM_FAULT_STATUS=0x%08x "
+			"VM_FAULT_MCCLIENT=0x%08x rptr_cpu_addr=0x%08x wptr_cpu_addr=0x%08x\n",
+			ring->name, fault_addr, fault_status, fault_client,
+			ring->rptr_cpu_addr ? *ring->rptr_cpu_addr : 0xffffffff,
+			ring->wptr_cpu_addr ? *ring->wptr_cpu_addr : 0xffffffff);
+
 		dev_info(adev->dev,
 			"ring_test_ring[%s]: timeout scratch=0x%08x "
 			"CP_ME_CNTL=0x%08x CP_STAT=0x%08x GRBM_STATUS=0x%08x "
